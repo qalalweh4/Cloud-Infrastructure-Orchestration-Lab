@@ -41,56 +41,8 @@ The layers, bottom to top:
 
 ## Architecture
 
-```
-┌──────────────────────────────────────────────────────────────────┐
-│                    Physical / Hypervisor Layer                     │
-│         3 bare-metal servers running Ubuntu 22.04                 │
-└──────────────────────┬───────────────────────────────────────────┘
-                       │
-┌──────────────────────▼───────────────────────────────────────────┐
-│                   OpenStack (IaaS Layer)                           │
-│                                                                    │
-│  ┌─────────────────┐  ┌──────────────────┐  ┌─────────────────┐  │
-│  │ Controller node  │  │  Compute node 1  │  │  Compute node 2 │  │
-│  │ Keystone/Nova    │  │  Nova compute    │  │  Nova compute   │  │
-│  │ Glance/Neutron   │  │  Neutron agent   │  │  Neutron agent  │  │
-│  │ Cinder/Horizon   │  │  192.168.10.11   │  │  192.168.10.12  │  │
-│  │ 192.168.10.10    │  └──────────────────┘  └─────────────────┘  │
-│  └─────────────────┘                                               │
-│                                                                    │
-│  Networks: corp-net (10.0.1.0/24)  Floating IPs: 192.168.10.x     │
-└──────────────────────┬───────────────────────────────────────────┘
-                       │  OpenStack VMs
-┌──────────────────────▼───────────────────────────────────────────┐
-│               Kubernetes Cluster (Orchestration Layer)             │
-│                                                                    │
-│  ┌──────────────────┐   ┌────────────┐ ┌────────────┐ ┌────────┐ │
-│  │  Control Plane   │   │  Worker 1  │ │  Worker 2  │ │Worker 3│ │
-│  │  10.0.1.10       │   │  10.0.1.11 │ │  10.0.1.12 │ │10.0.1.13│ │
-│  │  API / etcd      │   │  Pods      │ │  Pods      │ │  Pods  │ │
-│  └──────────────────┘   └────────────┘ └────────────┘ └────────┘ │
-│                                                                    │
-│  CNI: Flannel (VXLAN)  LB: MetalLB  Ingress: Nginx                │
-└──────────────────────┬───────────────────────────────────────────┘
-                       │  Pods / Services
-┌──────────────────────▼───────────────────────────────────────────┐
-│                  Application Layer                                  │
-│                                                                    │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐            │
-│  │  Flask API   │  │ React frontend│  │  PostgreSQL  │            │
-│  │  (3 replicas)│  │ (2 replicas)  │  │  (StatefulSet│            │
-│  │  :5000       │  │  :3000        │  │  + PVC)      │            │
-│  └──────────────┘  └──────────────┘  └──────────────┘            │
-└──────────────────────┬───────────────────────────────────────────┘
-                       │
-┌──────────────────────▼───────────────────────────────────────────┐
-│                  Observability Layer                                │
-│                                                                    │
-│  Prometheus ──── scrapes ────► All pods, nodes, K8s API           │
-│  Grafana    ──── queries ────► Prometheus                          │
-│  Alertmanager ── routes  ────► Slack webhooks                     │
-└──────────────────────────────────────────────────────────────────┘
-```
+<img width="1024" height="1536" alt="Architecture" src="https://github.com/user-attachments/assets/1cc08508-def2-406a-919f-d1f6ea32d19e" />
+
 
 ---
 
@@ -559,44 +511,10 @@ The CI/CD pipeline automates the full path from a `git push` to a live rolling d
 
 ### 4.1 Pipeline Flow
 
-```
-git push to main
-       │
-       ▼
-┌─────────────────┐
-│  Checkout code  │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│  Build Docker   │  ← tagged with git SHA (e.g. api:a1b2c3d4)
-│  image          │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│  Run unit tests │  ← pytest inside container
-│  inside image   │  ← Pipeline STOPS here if tests fail
-└────────┬────────┘
-         │ (only if tests pass)
-         ▼
-┌─────────────────┐
-│  Push image to  │  ← private registry
-│  registry       │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│  kubectl set    │  ← rolling update, zero downtime
-│  image          │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐    ┌─────────────────┐
-│  Rollout        │    │  Rollback on    │
-│  success        │    │  failure        │
-└─────────────────┘    └─────────────────┘
-```
+![Uploading CICD.png…]()
+
+
+
 
 ### 4.2 GitHub Actions Workflow
 
