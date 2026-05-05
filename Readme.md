@@ -511,7 +511,8 @@ The CI/CD pipeline automates the full path from a `git push` to a live rolling d
 
 ### 4.1 Pipeline Flow
 
-![Uploading CICD.png…]()
+<img width="1024" height="1536" alt="CICD" src="https://github.com/user-attachments/assets/7b849204-4421-4708-9200-b3d3a208e0a3" />
+
 
 
 
